@@ -181,11 +181,9 @@ export default function UsersPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Card>
-        <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl font-bold">User Management</CardTitle>
+            <div className="mb-10">
+              <CardTitle className="text-3xl font-bold tracking-tight">User Management</CardTitle>
               <CardDescription>
                 View, edit, and manage all users in the system
               </CardDescription>
@@ -195,13 +193,12 @@ export default function UsersPage() {
               Add New User
             </Button>
           </div>
-        </CardHeader>
         <CardContent className="space-y-4">
           {/* Role Tabs */}
           <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               {ROLE_TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
+                <TabsTrigger key={tab.value} value={tab.value} className="cursor-pointer">
                   {tab.label}
                 </TabsTrigger>
               ))}
@@ -385,7 +382,6 @@ export default function UsersPage() {
             </div>
           )}
         </CardContent>
-      </Card>
 
       {/* Dialogs */}
       {selectedUser && (

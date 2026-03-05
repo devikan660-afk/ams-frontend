@@ -24,7 +24,6 @@ export default function DashboardLayout({
     }
   }, [isLoading, session, router]);
 
-  // Role-based menu items
   const dockItems = useMemo(() => {
     const baseItems = [
       { icon: <Home size={18} />, label: 'Home', onClick: () => router.push('/dashboard') },
@@ -40,8 +39,7 @@ export default function DashboardLayout({
 
     // Teacher-specific items
     if (user?.role === 'teacher' || user?.role === 'hod') {
-      baseItems.push(
-        { icon: <BookOpen size={18} />, label: 'Academics', onClick: () => router.push('/dashboard/academics') },
+      baseItems.push( 
         { icon: <ClipboardCheck size={18} />, label: 'Attendance', onClick: () => router.push('/dashboard/attendance') }
       );
     }

@@ -40,6 +40,10 @@ Update `.github/copilot-instructions.md` immediately after:
       data: { ...otherFields }
     }
     ```
+  - **API Best Practices:**
+    - **DELETE operations:** Do NOT include `Content-Type` header when no request body is being sent. Only include headers when sending data in the request body.
+    - **Credentials:** Always include `credentials: 'include'` for session-based authentication.
+    - **Error Handling:** Always wrap API calls in try-catch and provide meaningful error messages.
 - **Authentication:**
   - Implemented via `better-auth` client and custom `AuthContext`.
   - Reference: `lib/auth-client.ts` and `lib/auth-context.tsx`.
@@ -87,6 +91,9 @@ Update `.github/copilot-instructions.md` immediately after:
   - `/dashboard/(student)` - Student-specific dashboard route group
   - `/dashboard/(admin)` - Admin-specific dashboard route group
   - `/dashboard/(admin)/users` - User management page with CRUD operations
+  - `/dashboard/(teacher)` - Teacher-specific dashboard route group
+  - `/dashboard/(teacher)/attendance` - Attendance management page (list today's classes)
+  - `/dashboard/(teacher)/attendance/session/[id]` - Single session attendance marking page
   - `/dashboard/profile` - User profile page
   - `/dashboard/notifications` - Notifications page
   - `/dashboard/assignments` - Assignments page
@@ -100,6 +107,9 @@ Update `.github/copilot-instructions.md` immediately after:
     - `upcoming-classes.tsx` - Next scheduled classes
     - `summary-card.tsx` - Reusable summary card component
     - `notifications-list.tsx` - Teacher announcements
+  - `components/teacher/` - Teacher specific components
+    - `class-attendance-overview.tsx` - Class-wise attendance statistics
+    - `teacher-notifications.tsx` - Teacher notification list
   - `components/appshell/` - Layout and navigation components
     - `appshell.tsx` - Main layout wrapper
     - `Dock.tsx` - Animated bottom navigation dock
@@ -113,6 +123,10 @@ Update `.github/copilot-instructions.md` immediately after:
   - `lib/utils.ts` - Utility functions (cn() helper)
   - `lib/dummy-data.ts` - Mock data for development
   - `lib/api/user.ts` - User API service functions (listUsers, getUserById, createUser, updateUserById, deleteUserById)
+  - `lib/api/batch.ts` - Batch API service functions (listBatches, getBatchById, createBatch, updateBatchById, deleteBatchById)
+  - `lib/api/subject.ts` - Subject API service functions (listSubjects, getSubjectById, createSubject, updateSubjectById, deleteSubjectById)
+  - `lib/api/attendance-session.ts` - Attendance Session API service functions (listAttendanceSessions, getAttendanceSessionById, createAttendanceSession, updateAttendanceSessionById, deleteAttendanceSessionById)
+  - `lib/api/attendance-record.ts` - Attendance Record API service functions (listAttendanceRecords, getAttendanceRecordById, createAttendanceRecord, createBulkAttendanceRecords, updateAttendanceRecordById, deleteAttendanceRecordById)
 
 ## Dashboard Features by Role
 
@@ -143,6 +157,43 @@ Update `.github/copilot-instructions.md` immediately after:
   - `user-dialog.tsx` - Combined modal for viewing and editing user information
   - `delete-user-dialog.tsx` - Confirmation dialog for user deletion
 - **API Integration:** Uses `lib/api/user.ts` service functions with `/user/list` (GET) for fetching and `/user` (POST) for creating users
+
+#### Academics Management (`/dashboard/(admin)/academics`)
+- **Features:**
+  - Batch management (create, view, update, delete batches)
+  - Subject management (create, view, update, delete subjects)
+  - Pagination and filtering support
+  - Responsive data tables
+- **Components:**
+  - `page.tsx` - Main academics page with tabs for batches and subjects
+  - `batch-management.tsx` - Batch list and management
+  - `subject-management.tsx` - Subject list and management
+  - `add-batch-dialog.tsx` - Modal for creating new batches
+  - `batch-dialog.tsx` - View/edit batch information
+  - `delete-batch-dialog.tsx` - Confirmation dialog for batch deletion
+  - `add-subject-dialog.tsx` - Modal for creating new subjects
+  - `subject-dialog.tsx` - View/edit subject information
+  - `delete-subject-dialog.tsx` - Confirmation dialog for subject deletion
+- **API Integration:** Uses `lib/api/batch.ts` and `lib/api/subject.ts` service functions
+
+### Teacher Dashboard (`/dashboard/(teacher)`)
+- Teacher-specific views for class management and attendance
+
+#### Attendance Management (`/dashboard/(teacher)/attendance`)
+- **Features:**
+  - View today's attendance sessions
+  - Create new class/attendance session with batch, subject, session type, duration
+  - Sessions are automatically timestamped with start/end times
+  - Click on a session to mark attendance
+  - Mobile-first responsive design with horizontal scrolling cards on mobile
+  - Session types: Regular, Extra Class, Practical/Lab
+  - Real-time loading states with skeletons
+- **Components:**
+  - `page.tsx` - Main attendance page showing today's classes
+  - `create-class-dialog.tsx` - Modal for creating new attendance sessions
+  - `session/[id]/page.tsx` - Single session view for marking attendance (coming soon: student list and marking features)
+- **API Integration:** Uses `lib/api/attendance-session.ts` with `/attendance/session` endpoints
+- **Teacher Home:** Dashboard displays today's classes with quick access to attendance marking
 
 All components are responsive with mobile-first design and support dark/light modes.
 

@@ -30,13 +30,16 @@ export type Role = "student" | "parent" | "staff" | "other";
 
 export type User = {
   user: {
-    id?: string;
+    _id?: string;
     role: Role;
     first_name: string;
     last_name: string;
+    email: string;
     phone?: string;
     image?: string;
     gender?: "male" | "female" | "other";
+    createdAt: Date | string;
+    updatedAt: Date | string;
   },
   // student
   adm_number?: string;

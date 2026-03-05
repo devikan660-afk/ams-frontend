@@ -2,6 +2,8 @@
 
 import type { User } from "@/components/profile/profile-form";
 import ProfileForm from "@/components/profile/profile-form";
+import Avatar, { genConfig } from 'react-nice-avatar';
+import { Avatar as AvatarIcon, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,6 +16,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if(isPending) return;
     if(!session) return router.push("/signin?r=/profile");
+
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/user`, {
       credentials: "include",
@@ -49,20 +52,14 @@ export default function ProfilePage() {
           <div className="lg:col-span-1">
             <div className="rounded-2xl border bg-card p-6 shadow-sm">
               <div className="flex items-center space-x-4">
-                {user.user.image ? (
-                  <img
-                    src={user.user.image}
-                    alt={`${user.user.first_name} ${user.user.last_name}`}
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="h-16 w-16 rounded-full bg-violet-600 text-white flex items-center justify-center text-lg font-medium"
-                    aria-hidden
-                  >
-                    {(user.user.first_name[0] ?? "U").toUpperCase()}
-                  </div>
-                )}
+                 {(user.user?.image !== undefined && user.user?.image != "" && user.user?.image != "gen" ?
+                  <AvatarIcon className="h-16 w-16">
+                    <AvatarImage src={user.user?.image || ''} alt={user.user?.first_name || 'User'} />
+                    <AvatarFallback className="text-[8px]">{user.user?.first_name?.[0] || 'U'}</AvatarFallback>
+                  </AvatarIcon> :
+                  <Avatar {...{...genConfig(user?.user.email), sex: user.user?.gender == "male" ? "man" : "woman"}} className="h-16 w-16" />
+                )
+                }
 
                 <div>
                   <div className="text-lg font-semibold">
