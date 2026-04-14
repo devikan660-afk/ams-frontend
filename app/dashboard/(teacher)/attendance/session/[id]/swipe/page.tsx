@@ -41,6 +41,7 @@ export default function SwipeAttendancePage() {
   // Track the current index for UI purposes 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [existingRecords, setExistingRecords] = useState<Map<string, AttendanceRecord>>(new Map());
+  const [lastSwipeDirection, setLastSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -125,6 +126,14 @@ export default function SwipeAttendancePage() {
 
   const swiped = (direction: string, studentId: string, index: number) => {
     const status: AttendanceStatus = direction === "right" ? "present" : "absent";
+    
+    // Show visual feedback for swipe direction
+    setLastSwipeDirection(direction === "right" ? 'right' : 'left');
+    
+    // Auto-reset the visual feedback after 500ms
+    setTimeout(() => {
+      setLastSwipeDirection(null);
+    }, 500);
     
     setMarkedRecords((prev) => {
       const existing = prev.filter((r) => r.studentId !== studentId);
@@ -312,7 +321,11 @@ export default function SwipeAttendancePage() {
 
         {/* Tinder Card Stack */}
         <div className="relative w-full h-[400px]">
-          {students.map((student, idx) => (
+          {students.map((student, idx) => {
+            // Check if this is the current card being shown
+            const isCurrentCard = idx === currentIndex;
+            
+            return (
             <TinderCard
               ref={childRefs[idx]}
               key={student._id || idx}
@@ -322,7 +335,13 @@ export default function SwipeAttendancePage() {
               preventSwipe={["up", "down"]}
             >
               {/* Card Face Layout */}
-              <div className="flex-1 flex flex-col relative w-full h-full bg-card overflow-hidden rounded-[30px]">
+              <div className={`flex-1 flex flex-col relative w-full h-full bg-card overflow-hidden rounded-[30px] transition-colors duration-500 ${
+                isCurrentCard && lastSwipeDirection === 'right'
+                  ? 'bg-green-100 dark:bg-green-900/40'
+                  : isCurrentCard && lastSwipeDirection === 'left'
+                    ? 'bg-red-100 dark:bg-red-900/40'
+                    : ''
+              }`}>
                 
                 {(() => {
                   const markedRecord = markedRecords.find(r => r.studentId === student._id);
@@ -380,7 +399,8 @@ export default function SwipeAttendancePage() {
                 </div>
               </div>
             </TinderCard>
-          ))}
+            );
+          })}
         </div>
 
         {/* Manual Buttons */}
