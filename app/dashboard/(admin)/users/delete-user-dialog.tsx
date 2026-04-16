@@ -26,22 +26,22 @@ export function DeleteUserDialog({ user, open, onOpenChange, onConfirm }: Delete
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <p>
+            <span className="block">
               This action cannot be undone. This will permanently delete the user account for{" "}
               <span className="font-semibold">{user.name}</span> ({user.email}).
-            </p>
-            <p className="text-destructive font-medium">
+            </span>
+            <span className="block text-destructive font-medium">
               All associated data including:
-            </p>
-            <ul className="list-disc list-inside ml-4 text-sm">
-              <li>User authentication credentials</li>
-              <li>Profile information</li>
-              <li>Role-specific data ({user.role})</li>
-              {user.role === 'student' && <li>Associated parent records</li>}
-            </ul>
-            <p className="text-destructive font-medium">
+            </span>
+            <span className="block ml-4 text-sm">• User authentication credentials</span>
+            <span className="block ml-4 text-sm">• Profile information</span>
+            <span className="block ml-4 text-sm">• Role-specific data ({user.role})</span>
+            {user.role === 'student' && (
+              <span className="block ml-4 text-sm">• Associated parent records</span>
+            )}
+            <span className="block text-destructive font-medium">
               will be permanently deleted from the system.
-            </p>
+            </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

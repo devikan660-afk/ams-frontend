@@ -37,7 +37,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const createBatchSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().regex(/^[0-9]{2}[A-Z]{2,3}[0-9]*$/, "Batch ID must match format like 24CSE, 24CSE1, 24CSE2").optional().or(z.literal("")),
   name: z.string().min(1, "Batch name is required"),
   adm_year: z.number().min(2000, "Year must be at least 2000").max(2100, "Year must be at most 2100"),
   department: z.enum(["CSE", "ECE", "IT"] as const),
@@ -239,7 +239,8 @@ export function AddBatchDialog({ open, onOpenChange, onSuccess }: AddBatchDialog
                     <Input placeholder="24CSE" {...field} />
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    Optional. Auto-filled from admission year + department.
+                    Optional. Format: <strong>YY[A-Z]{2,3}[0-9]*</strong><br/>
+                    Examples: 24CSE, 24CSE1, 24CSE2, 24ECE, 24IT1
                   </p>
                   <FormMessage />
                 </FormItem>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Papa from "papaparse";
-import { createBatchesBulk, CreateBatchData, Department } from "@/lib/api/batch";
+import { createBatchesBulk, CreateBatchData, Department, listBatches } from "@/lib/api/batch";
 import { listUsers } from "@/lib/api/user";
 import type { User } from "@/lib/types/UserTypes";
 import {
@@ -43,6 +43,7 @@ type CsvRow = Record<string, string | undefined>;
 
 type PreviewRow = {
   rowNumber: number;
+  id?: string;
   name: string;
   adm_year?: number;
   department?: Department;
@@ -52,6 +53,7 @@ type PreviewRow = {
 };
 
 const TEMPLATE_HEADERS = [
+  "Batch ID",
   "Name",
   "Adm Year",
   "Department",
@@ -63,6 +65,9 @@ function normalizeHeader(value: string): string {
 }
 
 const CSV_HEADER_MAP: Record<string, string> = {
+  "batch id": "id",
+  "id": "id",
+  "batch_id": "id",
   "name": "name",
   "batch name": "name",
   "adm year": "adm_year",
@@ -75,6 +80,7 @@ const CSV_HEADER_MAP: Record<string, string> = {
 
 function buildTemplateCsv(): string {
   const exampleRow: Record<string, string> = {
+    "Batch ID": "24CSE1",
     "Name": "24CSE-A",
     "Adm Year": "2024",
     "Department": "CSE",
@@ -102,6 +108,8 @@ function downloadTextFile(filename: string, content: string, mime = "text/csv;ch
 }
 
 export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUploadDialogProps) {
+  const batchIdPattern = /^[0-9]{2}[A-Z]{2,3}[0-9]*$/;
+
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BulkResult | null>(null);
@@ -111,6 +119,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
   const [isParsing, setIsParsing] = useState(false);
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [teachers, setTeachers] = useState<User[]>([]);
+  const [existingBatchIds, setExistingBatchIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (open) {
@@ -130,7 +139,26 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
           console.error(err);
         }
       };
+      const fetchExistingBatchIds = async () => {
+        const ids = new Set<string>();
+        let page = 1;
+        let totalPages = 1;
+        try {
+          do {
+            const data = await listBatches({ limit: 100, page });
+            data.batches.forEach((b) => {
+              if (b.id) ids.add(b.id.toUpperCase());
+            });
+            totalPages = data.pagination?.totalPages || 1;
+            page++;
+          } while (page <= totalPages);
+        } catch (err) {
+          console.error(err);
+        }
+        setExistingBatchIds(ids);
+      };
       fetchAllTeachers();
+      fetchExistingBatchIds();
     }
   }, [open]);
 
@@ -143,6 +171,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
     setIsSubmitting(false);
     setIsParsing(false);
     setPreviewRows(null);
+    setExistingBatchIds(new Set());
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -170,16 +199,20 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
     });
   };
 
-  const buildPreview = (rows: CsvRow[], availableTeachers: User[]): PreviewRow[] => {
-    return rows.map((r, idx) => {
+  const buildPreview = (rows: CsvRow[], availableTeachers: User[], existingIds: Set<string>): PreviewRow[] => {
+    const preview = rows.map((r, idx) => {
       const rowNumber = idx + 2; 
 
+      const idRaw = (r.id || "").trim().toUpperCase();
       const name = (r.name || "").trim();
       const adm_year_raw = (r.adm_year || "").trim();
       const departmentRaw = (r.department || "").trim().toUpperCase();
       const staff_advisor_email = (r.staff_advisor_email || "").trim().toLowerCase();
 
       const errors: string[] = [];
+      if (idRaw && !batchIdPattern.test(idRaw)) {
+        errors.push("Batch ID must match format like 24CSE, 24CSE1, 24CSE2");
+      }
       if (!name) errors.push("Name is required");
       if (!adm_year_raw) errors.push("Adm Year is required");
       if (!departmentRaw) errors.push("Department is required");
@@ -217,6 +250,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
       let payload: CreateBatchData | undefined = undefined;
       if (!errors.length && adm_year && department && staff_advisor) {
         payload = {
+          id: idRaw || undefined,
           name,
           adm_year,
           department,
@@ -226,6 +260,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
 
       return {
         rowNumber,
+        id: idRaw || undefined,
         name,
         adm_year,
         department,
@@ -234,6 +269,85 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
         payload,
       };
     });
+
+    const usedIds = new Set(existingIds);
+
+    // Validate explicit IDs for duplicates (in CSV and existing backend records).
+    const explicitIdRows = new Map<string, number[]>();
+    preview.forEach((row) => {
+      if (!row.id) return;
+      const id = row.id.toUpperCase();
+      const rowsList = explicitIdRows.get(id) || [];
+      rowsList.push(row.rowNumber);
+      explicitIdRows.set(id, rowsList);
+    });
+
+    explicitIdRows.forEach((rowsList, id) => {
+      if (rowsList.length > 1) {
+        preview.forEach((row) => {
+          if (row.id?.toUpperCase() === id) {
+            row.errors.push(`Duplicate Batch ID in CSV: ${id}`);
+          }
+        });
+      }
+
+      if (usedIds.has(id)) {
+        preview.forEach((row) => {
+          if (row.id?.toUpperCase() === id) {
+            row.errors.push(`Batch ID already exists: ${id}`);
+          }
+        });
+      }
+    });
+
+    // Reserve valid explicit IDs.
+    preview.forEach((row) => {
+      if (row.id && !row.errors.some((e) => e.includes("Batch ID"))) {
+        usedIds.add(row.id.toUpperCase());
+      }
+    });
+
+    // Auto-generate IDs for rows without explicit ID.
+    // Rule: if same yy+dept appears multiple times in upload, generate suffixed IDs: 24CSE1, 24CSE2, ...
+    const grouped = new Map<string, number[]>();
+    preview.forEach((row, index) => {
+      if (row.errors.length > 0) return;
+      if (row.id) return;
+      if (!row.adm_year || !row.department) return;
+      const baseId = `${String(row.adm_year).slice(-2)}${row.department}`;
+      const list = grouped.get(baseId) || [];
+      list.push(index);
+      grouped.set(baseId, list);
+    });
+
+    grouped.forEach((indices, baseId) => {
+      const shouldForceSuffix = indices.length > 1;
+      let suffix = 1;
+
+      indices.forEach((index) => {
+        let finalId = "";
+        if (!shouldForceSuffix && !usedIds.has(baseId)) {
+          finalId = baseId;
+        } else {
+          while (usedIds.has(`${baseId}${suffix}`)) {
+            suffix += 1;
+          }
+          finalId = `${baseId}${suffix}`;
+          suffix += 1;
+        }
+
+        usedIds.add(finalId);
+        preview[index].id = finalId;
+        if (preview[index].payload) {
+          preview[index].payload = {
+            ...preview[index].payload,
+            id: finalId,
+          };
+        }
+      });
+    });
+
+    return preview;
   };
 
   const handleDownloadTemplate = () => {
@@ -258,7 +372,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
           setError("CSV appears to be empty.");
           return;
         }
-        const preview = buildPreview(rows, teachers);
+        const preview = buildPreview(rows, teachers, existingBatchIds);
         setPreviewRows(preview);
       } catch (e) {
         setPreviewRows(null);
@@ -268,7 +382,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
       }
     };
     run();
-  }, [file, teachers]);
+  }, [file, teachers, existingBatchIds]);
 
   const handleSubmit = async () => {
     try {
@@ -399,6 +513,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
                   <TableHeader>
                     <TableRow>
                       <TableHead>#</TableHead>
+                      <TableHead>Batch ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Adm Year</TableHead>
@@ -409,6 +524,7 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
                     {previewRows.slice(0, 50).map((r) => (
                       <TableRow key={r.rowNumber}>
                         <TableCell className="text-muted-foreground">{r.rowNumber}</TableCell>
+                        <TableCell>{r.id || "(auto)"}</TableCell>
                         <TableCell>{r.name || "—"}</TableCell>
                         <TableCell>{r.department || "—"}</TableCell>
                         <TableCell>{r.adm_year || "—"}</TableCell>

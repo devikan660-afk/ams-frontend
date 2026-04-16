@@ -138,11 +138,20 @@ Update `.github/copilot-instructions.md` immediately after:
 
 ### Student Dashboard (`/dashboard/(student)`)
 1. **Greeting Header:** Time-based greeting with dynamic backgrounds (Good Morning, Good Noon, Good Afternoon, Good Evening, Good Night, Good Late Night)
-2. **Attendance Overview:** Subject-wise attendance with color-coded warnings (red <75%, yellow 75-85%, green >85%)
-3. **Marks Overview:** Academic performance display with grades (A+, A, B+, B, C, F)
-4. **Recent Absences:** List of recent missed classes
-5. **Upcoming Classes:** Next scheduled classes with time and location
-6. **Notifications List:** Teacher announcements with type indicators
+2. **Attendance Overview (Dynamic):** Subject-wise attendance with color-coded warnings (red <75%, yellow 75-85%, green >85%)
+   - **Data Source:** Fetches from `GET /attendance/record` endpoint filtered by current student
+   - **Subjects Extracted:** Dynamically extracts unique subjects from attendance records (only shows subjects with attendance data)
+   - **Calculation:** Counts "present" records vs total for each subject
+   - **Pagination:** Handles multiple pages of attendance records (limit: 100 per page)
+   - **Implementation:** `app/dashboard/(student)/home.tsx` uses `listAttendanceRecords()` from `lib/api/attendance-record.ts`
+   - **Error Handling:** Shows error alert if fetch fails, displays skeleton loading states
+3. **Notifications List:** Teacher announcements with type indicators
+
+**Technical Notes:**
+- Students only see their own attendance data (API automatically filters by `student` query parameter)
+- Subjects are extracted from `record.session.subject` nested data
+- Uses pagination to fetch all records (may have multiple pages for active students)
+- Sorted alphabetically by subject name
 
 ### Admin Dashboard (`/dashboard/(admin)`)
 - Admin-specific views and controls

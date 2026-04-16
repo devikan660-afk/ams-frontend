@@ -106,7 +106,11 @@ export interface UpdateRecordData {
 }
 
 /**
- * List attendance records with pagination and filtering (staff only)
+ * List attendance records with pagination and filtering (staff and students)
+ * 
+ * **Permission Rules:**
+ * - Staff can view all records
+ * - Students can only view their own records (automatically filtered by API)
  */
 export async function listAttendanceRecords(params?: ListRecordsParams): Promise<ListRecordsResponse> {
   const queryParams = new URLSearchParams();
