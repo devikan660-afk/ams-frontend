@@ -118,6 +118,31 @@ const mapBackendFieldErrors = (payload: unknown): Record<string, string> => {
   const fieldErrors: Record<string, string> = {};
   const { statusCode, message, raw } = parseBackendErrorPayload(payload);
 
+  const lowerMessage = message.toLowerCase();
+  const hasAdmissionSignal =
+    raw.includes("adm_number") ||
+    raw.includes("admission number") ||
+    raw.includes("admission no") ||
+    lowerMessage.includes("admission number") ||
+    lowerMessage.includes("admission no");
+  const hasCandidateSignal =
+    raw.includes("candidate_code") ||
+    raw.includes("candidate code") ||
+    lowerMessage.includes("candidate code");
+
+  // Always prioritize combined duplicate mapping when both signals exist,
+  // even if backend status code is incorrectly sent as 4221/4222.
+  if (hasAdmissionSignal && hasCandidateSignal) {
+    const combined = selectFieldErrorMessage(
+      message,
+      "Admission number and candidate code already exist for another student",
+      ["admission", "candidate", "number", "code"]
+    );
+    fieldErrors.admissionNumber = combined;
+    fieldErrors.candidateCode = combined;
+    return fieldErrors;
+  }
+
   // Exact backend status-code mapping
   if (statusCode === 4222) {
     fieldErrors.candidateCode = selectFieldErrorMessage(
@@ -184,18 +209,6 @@ const mapBackendFieldErrors = (payload: unknown): Record<string, string> => {
   }
 
   // Combined duplicate fallback for production responses that don't expose granular keys.
-  const hasAdmissionSignal = raw.includes("admission number") || message.toLowerCase().includes("admission number");
-  const hasCandidateSignal = raw.includes("candidate code") || message.toLowerCase().includes("candidate code");
-  if (hasAdmissionSignal && hasCandidateSignal) {
-    const combined = selectFieldErrorMessage(
-      message,
-      "Admission number and candidate code already exist for another student",
-      ["admission", "candidate", "number", "code"]
-    );
-    fieldErrors.admissionNumber = combined;
-    fieldErrors.candidateCode = combined;
-  }
-
   return fieldErrors;
 };
 
