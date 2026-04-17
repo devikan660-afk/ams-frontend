@@ -247,6 +247,11 @@ const mapBackendFieldErrors = (payload: unknown): Record<string, string> => {
   return fieldErrors;
 };
 
+const shouldLogOnboardingDebug = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("ams_debug_onboarding") === "1";
+};
+
   const FormField = ({ id, label, type = 'text', placeholder, value, error, disabled, onChange }: { id: keyof FormData; label: string; type?: string; placeholder?: string; value: string; error?: string; disabled?: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }) => (
     <div className={`space-y-2 ${disabled ? 'cursor-not-allowed' : ''}`}>
       <Label htmlFor={id}>{label}</Label>
@@ -441,6 +446,17 @@ export function SignUpUserAuthForm({ className, ...props }: UserAuthFormProps) {
       );
       const mappedFieldErrors = mapBackendFieldErrors(responsePayload);
       const isKnownUniquenessStatus = [4221, 4222, 4223].includes(Number(parsedBackendError.statusCode));
+
+      if (shouldLogOnboardingDebug()) {
+        console.info("[Onboarding Debug] POST /user", {
+          httpStatus: response.status,
+          normalizedStatus,
+          parsedStatusCode: parsedBackendError.statusCode,
+          parsedMessage: parsedBackendError.message,
+          mappedFieldErrors,
+          responsePayload,
+        });
+      }
 
       // Some production responses return HTTP 200 while carrying uniqueness status in body.
       if (isKnownUniquenessStatus && Object.keys(mappedFieldErrors).length > 0) {
