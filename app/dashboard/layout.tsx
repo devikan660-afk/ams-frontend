@@ -4,13 +4,21 @@ import Navbar from "@/components/appshell/navbar";
 import { useEffect, useMemo } from "react";
 import { BellRing, BookOpen, Home, Users, ClipboardCheck } from "lucide-react";
 import Dock from '@/components/appshell/Dock';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Avatar as AvatarIcon, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth-context";
 import Loading from "@/app/loading";
 import Avatar, { genConfig } from 'react-nice-avatar';
 
+// Routes shared by all roles
+const SHARED_ROUTES = [
+  "/dashboard/profile",
+  "/dashboard/notifications",
+  "/dashboard/assignments",
+];
+
 export default function DashboardLayout({
+  children,
   admin,
   student,
   teacher
@@ -21,7 +29,9 @@ export default function DashboardLayout({
   teacher: React.ReactNode;
 }>) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading, session, incompleteProfile } = useAuth();
+  const isSharedRoute = SHARED_ROUTES.some((r) => pathname.startsWith(r));
 
   const profileImageConfig: ReturnType<typeof genConfig> = useMemo(() => {
     const gender = user?.gender?.toLowerCase();
@@ -114,10 +124,17 @@ export default function DashboardLayout({
       <main className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
         <div className="flex-1 overflow-auto sm:pb-20">
-          {user.role == "student" && student}
-          {user.role == "admin" && admin}
-          {user.role == "teacher" && teacher}
-          {!["student","admin","teacher"].includes(user.role) && <div className="flex flex-1 items-center justify-center"><p>Your role &quot;{user.role}&quot; does not have a dashboard implemented yet.</p></div>}
+          {isSharedRoute && children}
+
+          {!isSharedRoute && user.role === "student" && student}
+          {!isSharedRoute && user.role === "admin" && admin}
+          {!isSharedRoute && (user.role === "teacher" || user.role === "hod") && teacher}
+          
+          {!isSharedRoute && !["student", "admin", "teacher", "hod"].includes(user.role) && (
+            <div className="flex flex-1 items-center justify-center">
+              <p>Your role &quot;{user.role}&quot; does not have a dashboard implemented yet.</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
