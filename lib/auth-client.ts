@@ -6,4 +6,7 @@ export type Session = NonNullable<
 
 export const authClient = createAuthClient({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
+    sessionOptions: {
+        refetchOnWindowFocus: false,
+    },
 })

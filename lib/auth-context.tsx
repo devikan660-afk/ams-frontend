@@ -19,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
   const hasSession = Boolean(session);
+  const sessionRef = useRef(session);
   const [user, setUser] = useState<User | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<IncompleteProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,27 +28,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const lastFetchTsRef = useRef(0);
   const router = useRouter();
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
 
   const fetchUser = useCallback(async () => {
     if (inFlightRef.current) return;
 
     // Avoid rapid duplicate calls on onboarding route when backend keeps returning 422.
     const now = Date.now();
-    if (pathname === '/onboarding' && now - lastFetchTsRef.current < 800) {
+    if (pathnameRef.current === '/onboarding' && now - lastFetchTsRef.current < 800) {
       return;
     }
 
     inFlightRef.current = true;
     lastFetchTsRef.current = now;
 
-    if (!session) {
+    const currentSession = sessionRef.current;
+
+    if (!currentSession) {
       setUser(null);
       setIncompleteProfile(null);
       setIsLoading(false);
-      
+
       // Redirect to signin if unauthenticated (except on public pages)
       const publicPaths = ['/', '/signin', '/signup'];
-      if (!publicPaths.includes(pathname)) {
+      if (!publicPaths.includes(pathnameRef.current)) {
         router.push('/signin');
       }
       inFlightRef.current = false;
@@ -57,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user`, {
         method: 'GET',
         headers: {
@@ -65,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         credentials: 'include',
       });
-
 
       const responseData = await response.json();
       const userData = responseData?.data as User | undefined;
@@ -85,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.status === 422) {
         // User needs onboarding; avoid self-redirect loops.
         setIsLoading(false);
-        if (pathname !== '/onboarding') {
+        if (pathnameRef.current !== '/onboarding') {
           router.replace('/onboarding');
         }
         return;
@@ -101,14 +113,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       inFlightRef.current = false;
     }
-  }, [pathname, router, session]);
+  }, [router]);
 
   useEffect(() => {
     if (!isPending) {
       fetchUser();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPending, hasSession, fetchUser]);
+  }, [isPending, hasSession]);
 
   const value: AuthContextType = {
     session,
