@@ -435,6 +435,18 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
     }
   };
 
+  const handleDownloadSuccess = () => {
+    if (!result?.success?.length) return;
+    const csv = Papa.unparse(result.success);
+    downloadTextFile(`ams-batches-success-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+
+  const handleDownloadFailed = () => {
+    if (!result?.failed?.length) return;
+    const csv = Papa.unparse(result.failed);
+    downloadTextFile(`ams-batches-failed-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+
   const isPartial = resultStatusCode === 207;
   const isAllFailed = resultStatusCode === 422;
   const previewErrorCount = previewRows?.filter((r) => r.errors.length).length ?? 0;
@@ -473,6 +485,18 @@ export function BulkUploadBatchDialog({ open, onOpenChange, onSuccess }: BulkUpl
             <AlertDescription className="ml-2 space-y-1">
               {resultMessage ? <div>{resultMessage}</div> : null}
               <div>Completed: {result.success.length} succeeded, {result.failed.length} failed.</div>
+              <div className="flex gap-2 pt-2">
+                {result.success.length > 0 && (
+                  <Button type="button" variant="outline" size="sm" onClick={handleDownloadSuccess} className="h-7 text-xs">
+                    <Download className="mr-1 h-3 w-3" /> Success Log
+                  </Button>
+                )}
+                {result.failed.length > 0 && (
+                  <Button type="button" variant="outline" size="sm" onClick={handleDownloadFailed} className="h-7 text-xs border-destructive/30 hover:bg-destructive/10">
+                    <Download className="mr-1 h-3 w-3" /> Failure Log
+                  </Button>
+                )}
+              </div>
             </AlertDescription>
           </Alert>
         )}

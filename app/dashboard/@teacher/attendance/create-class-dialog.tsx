@@ -44,12 +44,15 @@ export default function CreateClassDialog({ onClassCreated }: CreateClassDialogP
     }
   }, [open]);
 
+  const isValidDept = ["CSE", "ECE", "IT"].includes(teacherDept);
+
   const loadData = async () => {
     setLoadingData(true);
     try {
+      const filterDept = isValidDept ? teacherDept : undefined;
       const [batchesData, subjectsData] = await Promise.all([
-        listBatches({ limit: 100, department: teacherDept }),
-        listSubjects({ limit: 100, department: teacherDept }),
+        listBatches({ limit: 100, department: filterDept }),
+        listSubjects({ limit: 100, department: filterDept }),
       ]);
       setBatches(batchesData.batches);
       setAllSubjects(subjectsData.subjects);
@@ -65,8 +68,10 @@ export default function CreateClassDialog({ onClassCreated }: CreateClassDialogP
   const selectedSubject = subjects.find((s) => s._id === subjectId);
 
   useEffect(() => {
-    if (selectedBatch && selectedBatch.scheme) {
-      const filtered = allSubjects.filter(s => s.scheme === selectedBatch.scheme);
+    if (selectedBatch) {
+      const filtered = allSubjects.filter(
+        s => s.scheme === selectedBatch.scheme && s.department === selectedBatch.department
+      );
       setSubjects(filtered);
       if (subjectId && !filtered.some(s => s._id === subjectId)) {
         setSubjectId("");
