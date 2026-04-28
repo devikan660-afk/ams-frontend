@@ -39,8 +39,6 @@ export default function ProfilePage() {
     );
   }
 
-  
-
   return (
     <main className="min-h-screen bg-background">
       {" "}
@@ -92,8 +90,6 @@ export default function ProfilePage() {
                   <div className="h-full w-3/4 bg-primary rounded-full" />
                 </div>
               </div>
-
-              
 
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40">
