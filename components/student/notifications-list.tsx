@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bell, AlertCircle, Info, CheckCircle } from "lucide-react";
@@ -20,6 +21,18 @@ type NotificationsListProps = {
 };
 
 export default function NotificationsList({ notifications }: NotificationsListProps) {
+  const [notificationsList, setNotificationsList] = useState<Notification[]>(notifications);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("notifications");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const withDates = parsed.map((n: any) => ({ ...n, postedAt: new Date(n.postedAt) }));
+      setNotificationsList(withDates);
+    } else {
+      setNotificationsList(notifications);
+    }
+  }, [notifications]);
   const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
       case "warning":
@@ -46,7 +59,7 @@ export default function NotificationsList({ notifications }: NotificationsListPr
     }
   };
 
-  const sortedNotifications = [...notifications].sort((a, b) => 
+  const sortedNotifications = [...notificationsList].sort((a, b) => 
     new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
   );
 

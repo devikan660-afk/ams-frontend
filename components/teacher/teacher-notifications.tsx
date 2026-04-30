@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,17 @@ export default function TeacherNotifications({ notifications, teacherName }: Tea
     type: "announcement" as Notification["type"],
     targetClass: "all",
   });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("notifications");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const withDates = parsed.map((n: any) => ({ ...n, postedAt: new Date(n.postedAt) }));
+      setNotificationsList(withDates);
+    } else {
+      setNotificationsList(notifications);
+    }
+  }, [notifications]);
 
   const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
@@ -75,7 +86,9 @@ export default function TeacherNotifications({ notifications, teacherName }: Tea
       targetClass: formData.targetClass === "all" ? undefined : formData.targetClass,
     };
 
-    setNotificationsList([newNotification, ...notificationsList]);
+    const newList = [newNotification, ...notificationsList];
+    setNotificationsList(newList);
+    localStorage.setItem("notifications", JSON.stringify(newList));
     setFormData({ title: "", message: "", type: "announcement", targetClass: "all" });
     setIsCreateOpen(false);
   };
@@ -83,19 +96,21 @@ export default function TeacherNotifications({ notifications, teacherName }: Tea
   const handleEditNotification = () => {
     if (!editingNotification) return;
 
-    setNotificationsList(
-      notificationsList.map((notif) =>
-        notif.id === editingNotification.id
-          ? { ...notif, title: formData.title, message: formData.message, type: formData.type }
-          : notif
-      )
+    const updatedList = notificationsList.map((notif) =>
+      notif.id === editingNotification.id
+        ? { ...notif, title: formData.title, message: formData.message, type: formData.type }
+        : notif
     );
+    setNotificationsList(updatedList);
+    localStorage.setItem("notifications", JSON.stringify(updatedList));
     setEditingNotification(null);
     setFormData({ title: "", message: "", type: "announcement", targetClass: "all" });
   };
 
   const handleDeleteNotification = (id: string) => {
-    setNotificationsList(notificationsList.filter((notif) => notif.id !== id));
+    const updatedList = notificationsList.filter((notif) => notif.id !== id);
+    setNotificationsList(updatedList);
+    localStorage.setItem("notifications", JSON.stringify(updatedList));
   };
 
   const openEditDialog = (notification: Notification) => {
