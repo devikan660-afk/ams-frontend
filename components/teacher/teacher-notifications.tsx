@@ -264,7 +264,7 @@ export default function TeacherNotifications() {
                       <SelectItem value="year">Year</SelectItem>
                       <SelectItem value="batch">Batch</SelectItem>
                       <SelectItem value="department">Department</SelectItem>
-                      <SelectItem value="individual">Individual</SelectItem>
+                      
                     </SelectContent>
                   </Select>
                 </div>

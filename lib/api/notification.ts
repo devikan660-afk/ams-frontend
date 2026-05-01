@@ -180,3 +180,15 @@ export async function getUnreadCount(): Promise<number> {
     return 0;
   }
 }
+export async function listBatches() {
+  const response = await fetch(`${API_BASE}/batches`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch batches");
+  }
+  return result.data || [];
+}

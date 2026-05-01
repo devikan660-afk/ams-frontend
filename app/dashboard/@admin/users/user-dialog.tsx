@@ -202,13 +202,13 @@ export function UserDialog({
   const role = user.role;
   const isStudent = role === "student";
   const isParent  = role === "parent";
-  const isStaff   = ["teacher", "hod", "principal", "staff"].includes(role);
+  const AnyStaff   = ["teacher", "hod", "principal", "staff"].includes(role);
 
   // Read from profile for completeness checks
   const p = (user.profile ?? {}) as any;
   const hasBasicProfile   = Boolean(user.first_name && user.last_name);
   const hasStudentProfile = !isStudent ? true : Boolean(p.batch && p.adm_number && p.adm_year && p.department && p.date_of_birth);
-  const hasStaffProfile   = !isStaff   ? true : Boolean(p.designation && p.department && p.date_of_joining);
+  const hasStaffProfile   = !AnyStaff   ? true : Boolean(p.designation && p.department && p.date_of_joining);
   const hasParentProfile  = !isParent  ? true : Boolean(p.relation && p.child?._id);
   const isProfileIncomplete = !(hasBasicProfile && hasStudentProfile && hasStaffProfile && hasParentProfile);
 
@@ -369,10 +369,10 @@ export function UserDialog({
                 </div>
 
                 {/* Role-specific section */}
-                {(isStudent || isStaff || isParent) && (
+                {(isStudent || AnyStaff || isParent) && (
                   <div className="space-y-4">
                     <h4 className="font-semibold text-lg flex items-center gap-2 border-b pb-2">
-                      {isStudent ? "Academic Information" : isStaff ? "Staff Information" : "Parent Information"}
+                      {isStudent ? "Academic Information" : AnyStaff ? "Staff Information" : "Parent Information"}
                     </h4>
 
                     {/* Student */}
@@ -482,7 +482,7 @@ export function UserDialog({
                     )}
 
                     {/* Staff */}
-                    {isStaff && (
+                    {AnyStaff && (
                       isEditing ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <FormField

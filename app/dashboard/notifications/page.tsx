@@ -40,6 +40,7 @@ import {
   createNotification,
   updateNotification,
   deleteNotification,
+  listBatches,
   INotification,
   CreateNotificationPayload,
   UpdateNotificationPayload,
@@ -53,15 +54,15 @@ type FormData = {
   title: string;
   message: string;
   notificationType: "announcement" | "info" | "warning" | "success";
-  priorityLevel: number;
-  targetGroup: "college" | "year" | "batch" | "department" | "individual";
+  priorityLevel: "High" | "Medium" | "Low";
+  targetGroup: "college" | "year" | "batch" | "department";
   targetID: string;
   targetUsers: string[];
 };
 
 export default function NotificationsPage() {
   const { user } = useAuth();
-  const isStaff =
+  const AnyStaff =
     user?.role === "staff" ||
     user?.role === "teacher" ||
     user?.role === "admin" ||
@@ -69,6 +70,7 @@ export default function NotificationsPage() {
     user?.role === "hod";
 
   const [notifications, setNotifications] = useState<DisplayNotification[]>([]);
+  const [batches, setBatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -77,7 +79,7 @@ export default function NotificationsPage() {
     title: "",
     message: "",
     notificationType: "announcement",
-    priorityLevel: 1,
+    priorityLevel: "low",
     targetGroup: "college",
     targetID: "",
     targetUsers: [],
@@ -86,6 +88,11 @@ export default function NotificationsPage() {
   useEffect(() => {
     loadNotifications();
   }, []);
+  useEffect(() => {
+  if (formData.targetGroup === "batch") {
+    loadBatches();
+  }
+}, [formData.targetGroup]);
 
   const loadNotifications = async () => {
     try {
@@ -103,6 +110,14 @@ export default function NotificationsPage() {
       setIsLoading(false);
     }
   };
+  const loadBatches = async () => {
+  try {
+    const data = await listBatches();
+    setBatches(data);
+  } catch (error) {
+    toast.error("Failed to load batches");
+  }
+};
 
   const mapNotificationType = (type: string): "info" | "warning" | "success" | "announcement" => {
     switch (type) {
@@ -119,7 +134,7 @@ export default function NotificationsPage() {
       title: "",
       message: "",
       notificationType: "announcement",
-      priorityLevel: 1,
+      priorityLevel: "Low",
       targetGroup: "college",
       targetID: "",
       targetUsers: [],
@@ -249,7 +264,7 @@ export default function NotificationsPage() {
     <div className="container mx-auto p-4 md:p-6 pb-20 md:pb-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="font-semibold text-2xl">Notifications</div>
-        {isStaff && (
+        {AnyStaff && (
           <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -285,12 +300,12 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <Label>Priority</Label>
-                  <Select value={String(formData.priorityLevel)} onValueChange={(value) => setFormData({ ...formData, priorityLevel: Number(value) })}>
+                  <Select value={String(formData.priorityLevel)} onValueChange={(value) => setFormData({ ...formData, priorityLevel: value })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="3">High</SelectItem>
-                      <SelectItem value="2">Medium</SelectItem>
-                      <SelectItem value="1">Low</SelectItem>
+                     <SelectItem value="High">High</SelectItem>
+<SelectItem value="Medium">Medium</SelectItem>
+<SelectItem value="Low">Low</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -303,16 +318,45 @@ export default function NotificationsPage() {
                       <SelectItem value="year">Year</SelectItem>
                       <SelectItem value="batch">Batch</SelectItem>
                       <SelectItem value="department">Department</SelectItem>
-                      <SelectItem value="individual">Individual</SelectItem>
+                
                     </SelectContent>
                   </Select>
                 </div>
-                {formData.targetGroup !== "college" && (
-                  <div>
-                    <Label htmlFor="targetID">Target ID</Label>
-                    <Input id="targetID" placeholder={`Enter ${formData.targetGroup} identifier`} value={formData.targetID} onChange={(e) => setFormData({ ...formData, targetID: e.target.value })} />
-                  </div>
-                )}
+               {formData.targetGroup !== "college" && (
+  <div>
+    <Label htmlFor="targetID">Target ID</Label>
+
+    {formData.targetGroup === "batch" ? (
+      <Select
+        value={formData.targetID}
+        onValueChange={(value) =>
+          setFormData({ ...formData, targetID: value })
+        }
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select Batch" />
+        </SelectTrigger>
+        <SelectContent>
+          {batches.map((batch) => (
+            <SelectItem key={batch._id} value={batch._id}>
+              {batch.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    ) : (
+      <Input
+        id="targetID"
+        placeholder={`Enter ${formData.targetGroup} identifier`}
+        value={formData.targetID}
+        onChange={(e) =>
+          setFormData({ ...formData, targetID: e.target.value })
+        }
+      />
+    )}
+  </div>
+)}
+              
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={isCreating}>Cancel</Button>
@@ -357,7 +401,7 @@ export default function NotificationsPage() {
                   </div>
                 </div>
               </div>
-              {isStaff && (
+              {AnyStaff && (
                 <div className="flex gap-2 ml-4">
                   <Dialog
                     open={editingNotification?._id === notification._id && !!notification._id}
@@ -396,7 +440,12 @@ export default function NotificationsPage() {
                         </div>
                         <div>
                           <Label>Priority</Label>
-                          <Select value={String(formData.priorityLevel)} onValueChange={(value) => setFormData({ ...formData, priorityLevel: Number(value) })}>
+                         <Select
+  value={formData.priorityLevel}
+  onValueChange={(value: any) =>
+    setFormData({ ...formData, priorityLevel: value })
+  }
+>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="3">High</SelectItem>
