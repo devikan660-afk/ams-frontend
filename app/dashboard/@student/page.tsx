@@ -10,34 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { listNotifications, INotification } from "@/lib/api/notification";
 
 
-const dummyNotifications = [
-  {
-    id: "1",
-    title: "Mid-Semester Exam Schedule Released",
-    message: "Mid-semester exams will be conducted from December 20-27. Check your timetable for details.",
-    type: "announcement" as const,
-    postedBy: "Dr. Sarah Johnson",
-    postedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    isRead: false,
-  },
-  {
-    id: "2",
-    title: "Lab Session Rescheduled",
-    message: "Tomorrow's Database Lab is rescheduled to 2:00 PM instead of 10:00 AM.",
-    type: "warning" as const,
-    postedBy: "Prof. Michael Chen",
-    postedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    isRead: false,
-  },
-];
+
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
   const [attendance, setAttendance] = useState<SubjectAttendanceStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+const [notifications, setNotifications] = useState<INotification[]>([]);
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
@@ -48,6 +31,9 @@ export default function StudentDashboardPage() {
 
         const stats = await getStudentStats();
         setAttendance(stats);
+        
+        const notifs = await listNotifications();
+        setNotifications(notifs);
         setError(null);
       } catch (err) {
         console.error("Error fetching attendance data:", err);
@@ -106,7 +92,7 @@ export default function StudentDashboardPage() {
 
         {/* Right Column */}
         <div className="space-y-6">
-          <NotificationsList notifications={dummyNotifications} />
+        <NotificationsList notifications={notifications} />
         </div>
       </div>
     </div>

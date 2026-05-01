@@ -16,6 +16,7 @@ export type DockItemData = {
   label: React.ReactNode;
   onClick: () => void;
   className?: string;
+  badge?: number | string; // Optional badge count or text
 };
 
 export type DockProps = {
@@ -130,10 +131,20 @@ type DockIconProps = {
   className?: string;
   children: React.ReactNode;
   isHovered?: MotionValue<number>;
+  badge?: number | string;
 };
 
-function DockIcon({ children, className = '' }: DockIconProps) {
-  return <div className={`flex items-center justify-center ${className}`}>{children}</div>;
+function DockIcon({ children, className = '', badge }: DockIconProps) {
+  return (
+    <div className={`flex items-center justify-center relative ${className}`}>
+      {children}
+      {badge !== undefined && badge !== null && (
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+          {typeof badge === 'number' && badge > 99 ? '99+' : badge}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Dock({
@@ -185,7 +196,7 @@ export default function Dock({
               magnification={magnification}
               baseItemSize={baseItemSize}
             >
-              <DockIcon>{item.icon}</DockIcon>
+              <DockIcon badge={item.badge}>{item.icon}</DockIcon>
               <DockLabel>{item.label}</DockLabel>
             </DockItem>
           ))}
@@ -199,11 +210,16 @@ export default function Dock({
             <button
               key={index}
               onClick={item.onClick}
-              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full text-muted-foreground hover:text-foreground transition-colors ${item.className || ''}`}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full text-muted-foreground hover:text-foreground transition-colors relative ${item.className || ''}`}
               aria-label={typeof item.label === 'string' ? item.label : undefined}
             >
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center relative">
                 {item.icon}
+                {item.badge !== undefined && item.badge !== null && (
+                  <div className="absolute -top-2 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                    {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
+                  </div>
+                )}
               </div>
               <span className="text-[10px] font-medium">{item.label}</span>
             </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from "@/components/appshell/navbar";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BellRing, BookOpen, Home, Users, ClipboardCheck } from "lucide-react";
 import Dock from '@/components/appshell/Dock';
 import { useRouter, usePathname } from 'next/navigation';
@@ -9,6 +9,7 @@ import { Avatar as AvatarIcon, AvatarFallback, AvatarImage } from "@/components/
 import { useAuth } from "@/lib/auth-context";
 import Loading from "@/app/loading";
 import Avatar, { genConfig } from 'react-nice-avatar';
+import { getUnreadCount } from "@/lib/api/notification";
 
 // Routes shared by all roles
 const SHARED_ROUTES = [
@@ -32,6 +33,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { user, isLoading, session, incompleteProfile } = useAuth();
   const isSharedRoute = SHARED_ROUTES.some((r) => pathname.startsWith(r));
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const profileImageConfig: ReturnType<typeof genConfig> = useMemo(() => {
     const gender = user?.gender?.toLowerCase();
@@ -42,6 +44,22 @@ export default function DashboardLayout({
       sex: userGender,
     };
   }, [user?.email, user?.gender]);
+
+  // Fetch unread count on mount and when route changes
+  useEffect(() => {
+    if (user && session) {
+      loadUnreadCount();
+    }
+  }, [user, session, pathname]);
+
+  const loadUnreadCount = async () => {
+    try {
+      const count = await getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error("Failed to load unread count:", error);
+    }
+  };
 
   const dockItems = useMemo(() => {
     const baseItems = [
@@ -72,7 +90,12 @@ export default function DashboardLayout({
 
     // Common items for all roles
     baseItems.push(
-      { icon: <BellRing size={18} />, label: 'Notifications', onClick: () => router.push('/dashboard/notifications') },
+      { 
+        icon: <BellRing size={18} />, 
+        label: 'Notifications', 
+        onClick: () => router.push('/dashboard/notifications'),
+        badge: unreadCount > 0 ? unreadCount : undefined,
+      },
       //{ icon: <Book size={18} />, label: 'Assignments', onClick: () => router.push('/dashboard/assignments') },
     );
 
@@ -91,7 +114,7 @@ export default function DashboardLayout({
     });
 
     return baseItems;
-  }, [router, user, profileImageConfig]);
+  }, [router, user, profileImageConfig, unreadCount]);
 
   useEffect(() => {
     // Still loading, don't do anything yet
